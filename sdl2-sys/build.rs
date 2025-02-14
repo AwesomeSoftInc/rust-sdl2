@@ -527,25 +527,8 @@ fn copy_dynamic_libraries(sdl2_compiled_path: &Path, target_os: &str) {
 fn main() {
     let target = env::var("TARGET").expect("Cargo build scripts always have TARGET");
     let host = env::var("HOST").expect("Cargo build scripts always have HOST");
-    let target_os = get_os_from_triple(target.as_str()).unwrap();
 
     let sdl2_source_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("SDL");
-
-    let sdl2_compiled_path: PathBuf;
-    #[cfg(feature = "bundled")]
-    {
-        init_submodule(sdl2_source_path.as_path());
-        sdl2_compiled_path = compile_sdl2(sdl2_source_path.as_path(), target_os);
-
-        println!(
-            "cargo:rustc-link-search={}",
-            sdl2_compiled_path.join("lib64").display()
-        );
-        println!(
-            "cargo:rustc-link-search={}",
-            sdl2_compiled_path.join("lib").display()
-        );
-    }
 
     let sdl2_includes = sdl2_source_path
         .join("include")
@@ -572,17 +555,6 @@ fn main() {
     {
         copy_pregenerated_bindings();
         println!("cargo:include={}", sdl2_includes);
-    }
-
-    link_sdl2(target_os);
-
-    // Android builds shared libhidapi.so even for static builds.
-    #[cfg(all(
-        feature = "bundled",
-        any(not(feature = "static-link"), target_os = "android")
-    ))]
-    {
-        copy_dynamic_libraries(&sdl2_compiled_path, target_os);
     }
 }
 
